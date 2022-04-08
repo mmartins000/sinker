@@ -36,7 +36,7 @@
         "cache_dir_host": "/tmp/snyk_cache",
         "cache_dir_container": "/snyk_cache"
       },
-      "environment_vars": ["SNYK_TOKEN=66717774-7a5c-4240-9edd-95b13713ab75"]
+      "environment_vars": ["SNYK_TOKEN=aabbccdd-eeff-0011-2233-445566778899"]
     }
   },
   "sbom": {
@@ -106,7 +106,7 @@
   },
   "integrations": {
     "jira":{
-      "enabled": true,
+      "enabled": false,
       "url": "http://localhost:8080/",
       "auth_method": "userpass",
       "credentials": {

@@ -529,7 +529,6 @@ def run_scanners(config_object):
     Calls Docker functions. Called by main().
     :return: True if successful; False if PermissionError exception raised
     """
-    get_scanner_versions(config_object=config_object)
     targets_object = get_targets(targets_file)
 
     sinker_output_folder = config["output"]["sinker_output_folder"]
@@ -745,7 +744,7 @@ def get_version_trivy(config_object):
     :return: String with version
     """
     # Trivy outputs version in stdout as: "Version: vn.n.n"
-    if not args.skipTrivy:
+    if config["scanners"]["trivy"]["enabled"]:
         return get_version(container_image=config_object["scanners"]["trivy"]["image"],
                            command_to_run='--version').split(" ")[1]
 
@@ -757,7 +756,7 @@ def get_version_snyk(config_object):
     :return: String with version
     """
     # Snyk outputs version in stdout as: "n.n.n (standalone)"
-    if not args.skipSnyk:
+    if config["scanners"]["snyk"]["enabled"]:
         return get_version(container_image=config_object["scanners"]["snyk"]["image"],
                            command_to_run='snyk --version')
 
@@ -769,7 +768,7 @@ def get_version_syft(config_object):
     :return: String with version
     """
     # Syft outputs version in stdout as: "syft n.n.n"
-    if not args.skipSyft:
+    if config["sbom"]["syft"]["enabled"]:
         return get_version(container_image=config_object["sbom"]["syft"]["image"],
                            command_to_run='--version').split(" ")[1]
 
@@ -777,7 +776,6 @@ def get_version_syft(config_object):
 def get_version(container_image, command_to_run):
     """
     Runs Docker to get container image version.
-    Called by get_version_snyk(), get_version_syft() and get_version_trivy().
     :return: String containing Container version or "None"
     """
     dc = docker.from_env()
@@ -818,10 +816,14 @@ def docker_pull_target_images(targets_object, force_docker_pull):
 
 
 def docker_pull_scanner_images(config_object, force_docker_pull):
-    not args.skipGrype and docker_pull_image(config_object["scanners"]["grype"]["image"], force_docker_pull)
-    not args.skipTrivy and docker_pull_image(config_object["scanners"]["trivy"]["image"], force_docker_pull)
-    not args.skipSnyk and docker_pull_image(config_object["scanners"]["snyk"]["image"], force_docker_pull)
-    not args.skipSyft and docker_pull_image(config_object["sbom"]["syft"]["image"], force_docker_pull)
+    config["sbom"]["syft"]["enabled"] and \
+        docker_pull_image(config_object["sbom"]["syft"]["image"], force_docker_pull)
+    config["scanners"]["grype"]["enabled"] and \
+        docker_pull_image(config_object["scanners"]["grype"]["image"], force_docker_pull)
+    config["scanners"]["snyk"]["enabled"] and \
+        docker_pull_image(config_object["scanners"]["snyk"]["image"], force_docker_pull)
+    config["scanners"]["trivy"]["enabled"] and \
+        docker_pull_image(config_object["scanners"]["trivy"]["image"], force_docker_pull)
 
 
 def docker_pull_image(image_name, force_docker_pull):

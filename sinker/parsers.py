@@ -223,7 +223,7 @@ def parse_json_scanner_to_sinker(target_image, parsed_json_object, scanner_name)
 def process_grype(json_object, json_filename, target_image, total_time):
     """
     Processes Grype JSON output and collects summary data.
-    Tested with Grype v0.33.1.
+    Tested with Grype v0.34.7.
     :param json_object: JSON data loaded from file
     :param json_filename: The name of the file that contained the data
     :param target_image: Target image name and tag
@@ -778,7 +778,11 @@ def process_snyk_image_rec(snyk_json, target_image):
     # If Snyk didn't have network access, it will return a JSON with { "ok": false, "error": "..." }
     try:
         if not snyk_json["ok"] and snyk_json["error"]:
-            core.log_and_print("error", "Could not run Snyk on {}. Network error?".format(target_image))
+            if "authentication token has been revoked" in snyk_json["error"]:
+                core.log_and_print("error", "Could not run Snyk on {}. Authentication token has been revoked."
+                                   .format(target_image))
+            else:
+                core.log_and_print("error", "Could not run Snyk on {}. Network error?".format(target_image))
             return
 
     except KeyError:
@@ -1009,8 +1013,17 @@ def summarise_stats(json_object):
     json_object["sinker"]["scanners_count"] = scanners_count
     json_object["sinker"]["targets_count"] = targets_count
 
+    # To avoid running several times, we run only once here
+    core.get_scanner_versions(config_object=core.config)
+
     # Now, calculating stats per target:
     for target in json_object["reporting"]:
+        # Now we store the scanner version in JSON report:
+        if core.config["scanners"]["trivy"]:
+            json_object["reporting"][target]["summary_by_scanner"]["trivy"]["version"] = core.version_trivy
+        if core.config["scanners"]["snyk"]:
+            json_object["reporting"][target]["summary_by_scanner"]["snyk"]["version"] = core.version_snyk
+
         int_critical, int_high, int_medium, int_low, int_negligible, int_unknown = 0, 0, 0, 0, 0, 0
 
         # How many vulnerabilities did each scanner find, for that target image?
